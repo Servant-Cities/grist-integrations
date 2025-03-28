@@ -10,9 +10,13 @@ yarn dev
 ```
 
 ## How to use the widgets in Grist ?
-Add the following custom URL
+Add one of the following custom URLs
 
 ### Draw.io editor:
+Autosave mode:
+http://localhost:4000/draw-io-editor/?autosave=1&draw-io-url=https://embed.diagrams.net
+
+Manual mode:
 http://localhost:4000/draw-io-editor/?draw-io-url=https://embed.diagrams.net
 
 ## Host the widgets
