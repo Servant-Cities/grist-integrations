@@ -7,6 +7,7 @@ const iframe = document.getElementById("draw-io-editor");
 const params = new URLSearchParams(document.location.search);
 const drawIoUrl = params.get("draw-io-url");
 const autosave = params.get("autosave") || "0";
+const attachmentColumn = params.get("attachmentColumn") || "Attachment";
 
 const defaultXML = `<mxfile>
   <diagram name="Page-1" id="H42mLJITaVdfGOS4gqnu">
@@ -36,8 +37,8 @@ grist.onRecord(async record => {
       token = access.token;
     }
     selectedRecord = record;
-    if (record.Download) {
-      fetch(`${baseUrl}/attachments/${record.Download}/download?auth=${token}`)
+    if (record[attachmentColumn]) {
+      fetch(`${baseUrl}/attachments/${record[attachmentColumn]}/download?auth=${token}`)
         .then(response => response.text())
         .then(fileContent => {
           iframe.contentWindow.postMessage(
@@ -112,6 +113,6 @@ const saveFile = async xml => {
   console.log({ selectedRecord });
   await table.update({
     id: selectedRecord.id,
-    fields: { ...selectedRecord.fields, Raw: xml, Download: fileReferences },
+    fields: { ...selectedRecord.fields, Raw: xml, [attachmentColumn]: fileReferences },
   });
 };
