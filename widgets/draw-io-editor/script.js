@@ -8,7 +8,7 @@ const params = new URLSearchParams(document.location.search);
 const drawIoUrl = params.get("draw-io-url");
 const autosave = params.get("autosave") || "0";
 
-const defaultXML = `<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" version="26.0.14">
+const defaultXML = `<mxfile>
   <diagram name="Page-1" id="H42mLJITaVdfGOS4gqnu">
     <mxGraphModel dx="1260" dy="781" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -93,12 +93,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 const saveFile = async xml => {
-  const record = { ...selectedRecord };
   const table = grist.selectedTable;
+
   const fileName = `${record.Name || record.id}.drawio`;
 
   console.log({ fileName, table });
-
   const formData = new FormData();
   formData.append("upload", new Blob([xml], { type: "text/xml" }, fileName));
 
@@ -108,5 +107,11 @@ const saveFile = async xml => {
   });
 
   console.log(response);
-  table.update({ ...record, Download: response });
+  const fileReferences = await response.json();
+
+  console.log({ selectedRecord });
+  await table.update({
+    id: selectedRecord.id,
+    fields: { ...selectedRecord.fields, Raw: xml, Download: fileReferences },
+  });
 };
