@@ -1,3 +1,5 @@
+console.log('loading styled-html widget')
+
 // TODO: Use widget options instead of hardcoded constants
 const RAW_FILE_COLUMN = "Raw";
 
@@ -12,3 +14,5 @@ grist.onRecord(async record => {
     contentDiv.innerHTML = `<div style="color: red; font-weight: bold;">Error: No valid content found.</div>`;
   }
 });
+
+grist.ready();
