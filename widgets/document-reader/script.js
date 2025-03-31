@@ -13,7 +13,7 @@ const showError = message => {
 
 const renderWidget = async (url, record) => {
   if (currentWidget !== url) {
-    currentWidget = url;
+    console.log("Render : ", { url, record });
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Failed to load widget from ${url}`);
 
@@ -27,13 +27,19 @@ const renderWidget = async (url, record) => {
     });
 
     try {
+      //TODO: import once only
       const widget = await import(`${url}/script.js`);
-      widget.reset && widget.reset();
+      widget.reset && widget.reset(record);
       widget.onRecord && widget.onRecord(record);
     } catch (error) {
       document.body.innerHTML = `<p style='color: red;'>Failed to load widget-loader: ${error.message}</p>`;
     }
+  } else {
+    //TODO: import once only
+    const widget = await import(`${url}/script.js`);
+    widget.onRecord && widget.onRecord(record);
   }
+  currentWidget = url;
 };
 
 grist.onRecord(async record => {
@@ -51,6 +57,7 @@ grist.onRecord(async record => {
         renderWidget(DRAW_IO_URL, record);
         break;
       default:
+        currentWidget = "document_reader";
         showError("Unsupported format");
     }
   }
