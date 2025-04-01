@@ -5,10 +5,47 @@
     <title>In Context Translation with Grist</title>
     <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
     <style>
+
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        .title-wrapper {
+            padding: 16px;
+            background-color:#16B37885;
+            color: white;
+        }
+
+        .paragraph-wrapper {
+            padding: 16px;
+            max-width: 400px;
+        }
+
+        .locale-wrapper {
+            margin: 16px auto;
+            padding: 8px;
+            width: 360px;
+            border: #16B378 solid 2px;
+            border-radius: 8px;
+        }
+
+        .contact-link {
+            color: #16B378;
+            font-weight: bold;
+        }
+
+        .translate {
+            display: inline;
+        }
+
         .highlight {
             cursor: pointer;
-            background-color: yellow;
-            color: black;
+            background-color: #16B378;
+            color: white;
+        }
+
+        .highlight > .contact-link {
+            color: white;
         }
     </style>
     <script>
@@ -102,12 +139,21 @@
 </head>
 
 <body>
-    <h1 class="translate" data-key="title"></h1>
-    <p class="translate" data-key="description"></p>
-    <p class="translate interpolate" data-key="locale"><span id="locale"></span></p>
-    <p class="translate interpolate" data-key="services">
-        <a class="translate" data-key="link" href="mailto:contact@servantcities.eu">Contact Us</a>
-    </p>
+    <div class="title-wrapper">
+        <h1 class="translate" data-key="title"></h1>
+    </div>
+    <div class="paragraph-wrapper">
+        <p class="translate" data-key="description"></p>
+    </div>
+    <div class="locale-wrapper">
+        <p class="translate interpolate" data-key="locale"><span id="locale"></span></p>
+    </div>
+    <div class="paragraph-wrapper">
+        <p class="translate interpolate" data-key="services">
+            <a class="translate contact-link" data-key="link" href="mailto:contact@servantcities.eu">Contact Us</a>
+        </p>
+    </div>
+
 </body>
 
 </html>
