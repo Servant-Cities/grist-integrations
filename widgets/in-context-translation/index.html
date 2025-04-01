@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>In Context Translation with Grist</title>
+    <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+    <style>
+        .highlight {
+            cursor: pointer;
+            background-color: yellow;
+            color: black;
+        }
+    </style>
+    <script>
+        const defaultLocale = "en-US";
+
+        function getLocale() {
+            const locale = new URLSearchParams(window.location.search).get("locale") || defaultLocale;
+            document.documentElement.lang = locale;
+            document.getElementById("locale").textContent = locale;
+            return locale;
+        }
+
+        function translate(records) {
+            const locale = getLocale();
+            try {
+                const dictionary = records.reduce((acc, record) => {
+                    acc[record.key] = {
+                        text: record[locale.replace('-', '_')] || record[defaultLocale.replace('-', '_')],
+                        id: record.id
+                    };
+                    return acc;
+                }, {});
+
+                document.querySelectorAll(".translate:not(.interpolate)").forEach(el => {
+                    const key = el.getAttribute("data-key");
+                    if (key && dictionary[key]) {
+                        el.innerHTML = dictionary[key].text;
+                        el.setAttribute("data-record-id", dictionary[key].id);
+                    } else {
+                        el.innerHTML = "[Missing Translation key]";
+                    }
+                });
+
+                document.querySelectorAll(".interpolate").forEach(el => {
+                    const key = el.getAttribute("data-key");
+                    if (key && dictionary[key]) {
+                        el.innerHTML = interpolateText(dictionary[key].text, el);
+                        el.setAttribute("data-record-id", dictionary[key].id);
+                    } else {
+                        el.innerHTML = "[Missing Translation key]";
+                    }
+                });
+
+                addClickListeners();
+
+            } catch (error) {
+                console.error("Failed to fetch translations:", error);
+            }
+        }
+
+        function interpolateText(text, el) {
+            el.querySelectorAll("span, a").forEach((child, index) => {
+                const placeholder = child.id ? `{{${child.id}}}` : `{{${index + 1}}}`;
+                text = text.replace(placeholder, child.outerHTML);
+            });
+            return text;
+        }
+
+        function addClickListeners() {
+            document.querySelectorAll(".translate").forEach(el => {
+                el.addEventListener("click", function (event) {
+                    if (event.ctrlKey || event.metaKey) {
+                        event.stopPropagation();
+                        event.preventDefault();
+
+                        const recordId = el.getAttribute("data-record-id");
+                        if (!recordId) return;
+
+                        grist.fetchSelectedTable().then(table => {
+                            console.warn({ table });
+                            grist.setCursorPos({ rowId: parseInt(recordId, 10), sectionId: table.sectionId });
+                        }).catch(console.error);
+                    }
+                });
+            });
+        }
+
+        grist.onRecord(record => {
+            document.querySelectorAll(".highlight").forEach(el => el.classList.remove("highlight"));
+            document.querySelectorAll(`[data-key='${record.key}']`).forEach(el => el.classList.add("highlight"));
+        });
+
+        grist.onRecords(translate);
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            grist.ready({ allowSelectBy: true });
+            addClickListeners();
+        });
+
+    </script>
+</head>
+
+<body>
+    <h1 class="translate" data-key="title"></h1>
+    <p class="translate" data-key="description"></p>
+    <p class="translate interpolate" data-key="locale"><span id="locale"></span></p>
+    <p class="translate interpolate" data-key="services">
+        <a class="translate" data-key="link" href="mailto:contact@servantcities.eu">Contact Us</a>
+    </p>
+</body>
+
+</html>
