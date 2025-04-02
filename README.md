@@ -27,6 +27,12 @@ http://localhost:4000/draw-io-editor/?draw-io-url=https://embed.diagrams.net
 View your html files with css and scripts loaded
 http://localhost:4000/styled-html
 
+### In context translation:
+Translate in Grist and preview your app in a widget, Command click on in app text to select the right record in Grist.
+
+This is just a proove of concept you can derive for an actual use case. See it in action [here](https://www.youtube.com/watch?v=B_0RMhJWLRQ).
+http://localhost:4000/in-context-translation
+
 ## Host the widgets
 Build the server:
 ```
