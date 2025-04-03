@@ -7,7 +7,9 @@ let selectedRecord;
 const params = new URLSearchParams(document.location.search);
 const drawIoUrl = params.get("draw-io-url") || "https://embed.diagrams.net";
 const autosave = params.get("autosave") || "0";
-const attachmentColumn = params.get("attachmentColumn") || "Attachment";
+const rawColumn = params.get("rawColumn") || "Raw";
+// Wating for an update on this issue: https://github.com/gristlabs/grist-core/issues/1307
+//const attachmentColumn = params.get("attachmentColumn") || "Attachment";
 
 const defaultXML = `<mxfile>
   <diagram name="Page-1">
@@ -79,6 +81,8 @@ export const reset = record => {
 export const onRecord = async record => {
   if (record) {
     selectedRecord = record;
+    // Wating for an update on this issue: https://github.com/gristlabs/grist-core/issues/1307
+    /*
     if (!baseUrl || !token) {
       const access = await grist.getAccessToken();
       baseUrl = access.baseUrl;
@@ -110,12 +114,35 @@ export const onRecord = async record => {
       );
     }
   }
-};
+  */
+  if (record[rawColumn]) {
+    iframe.contentWindow.postMessage(
+      JSON.stringify({
+        action: "load",
+        autosave: parseInt(autosave, 10),
+        xml: record[rawColumn],
+      }),
+      "*"
+    );
+  }
+  } else {
+    iframe.contentWindow.postMessage(
+      JSON.stringify({
+        action: "load",
+        autosave: parseInt(autosave, 10),
+        xml: defaultXML,
+      }),
+      "*"
+    );
+  }
+}
 
 const saveFile = async xml => {
   const table = grist.selectedTable;
 
-  const fileName = `${record.Name || record.id}.drawio`;
+  // Wating for an update on this issue: https://github.com/gristlabs/grist-core/issues/1307
+  /*
+  const fileName = `${selectedRecord.Name || selectedRecord.id}.drawio`;
 
   console.log({ fileName, table });
   const formData = new FormData();
@@ -128,10 +155,12 @@ const saveFile = async xml => {
 
   console.log(response);
   const fileReferences = await response.json();
+  */
 
   console.log({ selectedRecord });
   await table.update({
     id: selectedRecord.id,
-    fields: { ...selectedRecord.fields, Raw: xml, [attachmentColumn]: fileReferences },
+    // Wating for an update on this issue: https://github.com/gristlabs/grist-core/issues/1307
+    fields: { ...selectedRecord.fields, [rawColumn]: xml, /*[attachmentColumn]: fileReferences*/ },
   });
 };
