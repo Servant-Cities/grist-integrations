@@ -86,7 +86,6 @@ async function renderPage(num, pdfContainer, totalPages) {
 
       if (pageWrapper) {
          //Quickfix a weird issue where the page is rendered twice in one function call
-          console.log(`Page wrapper for page ${num} already exists. Removing the duplicate.`);
           pageWrapper.remove();
       }
 
