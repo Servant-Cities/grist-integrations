@@ -1,0 +1,204 @@
+<html>
+
+<head>
+    <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        #loading {
+            font-size: 1.2rem;
+            font-style: italic;
+            color: #555;
+            width: 100%;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 320px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+        }
+
+        .card-link {
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .card img.preview {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-weight: bold;
+            font-size: 1rem;
+            margin: 0.2rem 0;
+        }
+
+        .card-description {
+            font-size: 0.9rem;
+            color: #555;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .card-footer {
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #777;
+        }
+
+        .favicon {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading" style="display:none;">Loading previews...</div>
+
+    <script>
+        const URL_COLUMN = "URL";
+        const container = document.body;
+        const loadingIndicator = document.getElementById("loading");
+        const ogCache = {};
+        let isRendering = false;
+
+        function extractOGData(html, fallbackUrl) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            const og = (prop) => doc.querySelector(`meta[property="og:${prop}"]`)?.content || "";
+
+            return {
+                title: og("title") || doc.title || fallbackUrl,
+                description: og("description") || "",
+                image: og("image") || "",
+                url: og("url") || fallbackUrl
+            };
+        }
+
+        async function fetchOG(url) {
+            if (ogCache[url]) return ogCache[url];
+
+            try {
+                const proxyUrl = `/proxy?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+                const finalUrl = response.url;
+                const html = await response.text();
+                const data = extractOGData(html, finalUrl);
+                ogCache[url] = data;
+                return data;
+            } catch (e) {
+                return {
+                    title: url,
+                    description: "Preview unavailable",
+                    image: "",
+                    url: url
+                };
+            }
+        }
+
+        function getFavicon(url) {
+            try {
+                const domain = new URL(url).hostname;
+                return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+            } catch {
+                return "";
+            }
+        }
+
+        async function renderCards(records) {
+            if (isRendering) return;
+            isRendering = true;
+            loadingIndicator.style.display = "block";
+
+            try {
+                container.innerHTML = "";
+                container.appendChild(loadingIndicator);
+
+                const urls = records.map(r => r[URL_COLUMN]).filter(Boolean);
+
+                for (const url of urls) {
+                    const og = await fetchOG(url);
+                    const faviconUrl = getFavicon(og.url);
+
+                    const card = document.createElement("div");
+                    card.className = "card";
+
+                    const cardLink = document.createElement("a");
+                    cardLink.className = "card-link";
+                    cardLink.href = og.url;
+                    cardLink.target = "_blank";
+                    cardLink.setAttribute("aria-label", og.title);
+
+                    const previewImg = og.image
+                        ? `<img loading="lazy" src="${og.image}" alt="Preview image for ${og.title}" class="preview">`
+                        : "";
+
+                    cardLink.innerHTML = `
+                        ${previewImg}
+                        <div class="card-content">
+                            <div>
+                                <div class="card-title">${og.title}</div>
+                                <div class="card-description">${og.description}</div>
+                            </div>
+                            <div class="card-footer">
+                                <img src="${faviconUrl}" alt="Favicon" class="favicon">
+                                <span>${new URL(og.url).hostname}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    card.appendChild(cardLink);
+                    container.appendChild(card);
+                }
+            } catch (e) {
+                container.innerHTML = "<p>Error loading previews. Please check your URLs or network.</p>";
+            } finally {
+                isRendering = false;
+                loadingIndicator.style.display = "none";
+            }
+        }
+
+        grist.ready();
+        grist.onRecords((records) => renderCards(records));
+    </script>
+</body>
+
+</html>
