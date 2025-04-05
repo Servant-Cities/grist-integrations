@@ -4,47 +4,70 @@ import fastifyCors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 
 const fastify = Fastify();
+
+// Enable CORS for all origins
 fastify.register(fastifyCors, {
   origin: "*",
 });
 
-fastify.get("/proxy", async (request, reply) => {
-  const { url } = request.query as { url: string };
+const MAX_REDIRECTS = 5; // Maximum number of redirects to follow
+
+// Function to fetch a URL and handle redirects
+async function fetchWithRedirects(url: string, redirects = 0): Promise<string> {
+  if (redirects >= MAX_REDIRECTS) {
+    throw new Error('Too many redirects');
+  }
+
   try {
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Cache-Control": "max-age=0",
       },
-      redirect: "follow", // Ensure redirects are followed
+      redirect: "manual", // Do not follow redirects automatically
     });
 
-    // Check if the response is HTML
     const contentType = response.headers.get("Content-Type") || "";
-    if (!contentType.includes("text/html")) {
-      console.log("Non-HTML response received, returning URL instead.");
-      return reply.send(url);  // Just return the URL if it's not HTML
+    // If it's an HTML page, check for redirects
+    if (response.status >= 300 && response.status < 400) {
+      const redirectUrl = response.headers.get("Location");
+      if (redirectUrl) {
+        // Follow the redirect URL
+        return fetchWithRedirects(redirectUrl, redirects + 1);
+      } else {
+        throw new Error('Redirect URL missing');
+      }
     }
 
-    const body = await response.text();
-    
-    // Log the body of the response for debugging purposes
-    console.log("Received body:", body.substring(0, 500));  // Log the first 500 chars for inspection
-
-    reply.type("text/html").send(body);
+    // Return the body as text if it's not a redirect
+    if (contentType.includes("text/html")) {
+      return await response.text();
+    } else {
+      return url; // If the content is not HTML, return the URL as is
+    }
   } catch (error) {
-    console.error("Error fetching URL:", error);
-    reply.code(500).send("Failed to fetch URL");
+    throw new Error(`Error fetching URL: ${error.message}`);
+  }
+}
+
+// Proxy route to handle fetching URLs
+fastify.get("/proxy", async (request, reply) => {
+  const { url } = request.query as { url: string };
+  if (!url) {
+    return reply.code(400).send("URL parameter is required");
+  }
+
+  try {
+    const htmlContent = await fetchWithRedirects(url); // Fetch the content, handling redirects
+    reply.type("text/html").send(htmlContent);
+  } catch (error) {
+    console.error("Error:", error.message);
+    reply.code(500).send(`Failed to fetch URL: ${error.message}`);
   }
 });
 
+// Static file serving (for widgets, etc.)
 const widgetsDir = path.resolve("../widgets");
 
 fastify.register(fastifyStatic, {
@@ -52,6 +75,7 @@ fastify.register(fastifyStatic, {
   prefix: "/",
 });
 
+// Start the server
 const start = async () => {
   try {
     await fastify.listen({ port: 4000, host: "0.0.0.0" });

@@ -9,7 +9,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 1rem;
-            justify-content: center;
+            justify-content: flex-start;
         }
 
         #loading {
@@ -29,6 +29,7 @@
             display: flex;
             flex-direction: column;
             background-color: #fff;
+            height: 350px;
         }
 
         .card-link {
@@ -58,6 +59,9 @@
             font-weight: bold;
             font-size: 1rem;
             margin: 0.2rem 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .card-description {
@@ -84,6 +88,23 @@
             height: 16px;
             border-radius: 2px;
         }
+
+        .grist-card {
+            background-color: #16B378;
+        }
+
+        .grist-card>.card-link>.card-content>div>.card-description {
+            color: #fff;
+        }
+
+        .grist-card>.card-link>.card-content>.card-footer {
+            color: #fff;
+        }
+
+
+        .grey-card {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 
@@ -91,7 +112,10 @@
     <div id="loading" style="display:none;">Loading previews...</div>
 
     <script>
-        const URL_COLUMN = "URL";
+        const urlParams = new URLSearchParams(window.location.search);
+        const gristUrl = urlParams.get('gristUrl') || 'docs.getgrist.com';
+        const URL_COLUMN = urlParams.get('urlColumnKey') || "URL";
+
         const container = document.body;
         const loadingIndicator = document.getElementById("loading");
         const ogCache = {};
@@ -115,10 +139,7 @@
 
             try {
                 const proxyUrl = `/proxy?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl, {
-                    method: 'GET',
-                    redirect: 'follow'
-                });
+                const response = await fetch(proxyUrl, { method: 'GET', redirect: 'follow' });
                 const finalUrl = response.url;
                 const html = await response.text();
                 const data = extractOGData(html, finalUrl);
@@ -155,12 +176,26 @@
                 const urls = records.map(r => r[URL_COLUMN]).filter(Boolean);
 
                 for (const url of urls) {
-                    const og = await fetchOG(url);
-                    const faviconUrl = getFavicon(og.url);
-
+                    let og;
                     const card = document.createElement("div");
                     card.className = "card";
 
+                    const documentName = await grist.docApi.getDocName(); // Get the document name
+                    const shortDocumentName = documentName.slice(0, 12); // Shorten it to 12 characters
+
+                    if (gristUrl === new URL(url).hostname) {
+                        og = {
+                            title: url.split(shortDocumentName)[1], // Use the shortened document name for splitting
+                            description: "Internal link",
+                            image: "",
+                            url: url
+                        };
+                        card.classList.add("grist-card");
+                    } else {
+                        og = await fetchOG(url);
+                    }
+
+                    const faviconUrl = getFavicon(og.url);
                     const cardLink = document.createElement("a");
                     cardLink.className = "card-link";
                     cardLink.href = og.url;
@@ -189,6 +224,7 @@
                     container.appendChild(card);
                 }
             } catch (e) {
+                console.error(e);
                 container.innerHTML = "<p>Error loading previews. Please check your URLs or network.</p>";
             } finally {
                 isRendering = false;
