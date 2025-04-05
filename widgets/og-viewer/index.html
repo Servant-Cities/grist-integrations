@@ -121,16 +121,16 @@
         const ogCache = {};
         let isRendering = false;
 
-        function extractOGData(html, fallbackUrl) {
+        function extractOGData(html, url) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, "text/html");
             const og = (prop) => doc.querySelector(`meta[property="og:${prop}"]`)?.content || "";
-
+            const hostname = new URL(url).hostname;
             return {
-                title: og("title") || doc.title || fallbackUrl,
-                description: og("description") || "",
+                title: og("title") || url.split(hostname)[1],
+                description: og("description") || "Issue reading OG data",
                 image: og("image") || "",
-                url: og("url") || fallbackUrl
+                url: og("url") || url
             };
         }
 
@@ -140,9 +140,9 @@
             try {
                 const proxyUrl = `/proxy?url=${encodeURIComponent(url)}`;
                 const response = await fetch(proxyUrl, { method: 'GET', redirect: 'follow' });
-                const finalUrl = response.url;
+                const fallbackURL = response.url;
                 const html = await response.text();
-                const data = extractOGData(html, finalUrl);
+                const data = extractOGData(html, url);
                 ogCache[url] = data;
                 return data;
             } catch (e) {
