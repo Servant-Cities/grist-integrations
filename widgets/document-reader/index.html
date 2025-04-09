@@ -3,6 +3,9 @@
 <head>
     <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
     <script>
+        let currentWidget;
+        let selectedRecord;
+
         // TODO: Use widget options instead of hardcoded constants
         const FORMAT_COLUMN = "Format";
 
@@ -19,23 +22,30 @@
 
         const renderWidget = async (url, record) => {
             console.log("Render : ", { url, record });
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Failed to load widget from ${url}`);
-
-            const htmlContent = await response.text();
-            const parser = new DOMParser();
-            const fetchedDocument = parser.parseFromString(htmlContent, "text/html");
-
-            document.body.innerHTML = "";
-            fetchedDocument.body.childNodes.forEach(node => {
-                document.body.appendChild(node.cloneNode(true));
-            });
 
             try {
-                //TODO: import once only
-                const widget = await import(`${url}/script.js`);
-                widget.reset && widget.reset(record);
-                widget.onRecord && widget.onRecord(record);
+                if (selectedRecord?.[FORMAT_COLUMN] !== record[FORMAT_COLUMN]) {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Failed to load widget from ${url}`);
+
+                    const htmlContent = await response.text();
+                    const parser = new DOMParser();
+                    const fetchedDocument = parser.parseFromString(htmlContent, "text/html");
+
+                    document.body.innerHTML = "";
+                    fetchedDocument.body.childNodes.forEach(node => {
+                        document.body.appendChild(node.cloneNode(true));
+                    });
+
+                    currentWidget = await import(`${url}/script.js`);
+                    currentWidget.reset && currentWidget.reset(record);
+
+                };
+
+                if (selectedRecord?.id !== record.id) {
+                    selectedRecord = record;
+                    currentWidget.onRecord && currentWidget.onRecord(record);
+                }
             } catch (error) {
                 document.body.innerHTML = `<p style='color: red;'>Failed to load widget-loader: ${error.message}</p>`;
             }
