@@ -4,14 +4,17 @@ const params = new URLSearchParams(document.location.search);
 const rawColumn = params.get("rawColumn") || "Raw";
 
 export const reset = record => {
-  console.log("reset !");
   editor = document.getElementById("editor");
 
+  selectedRecord = record;
   editor.value = record[rawColumn] || "";
 
   if (editor) {
     editor.addEventListener("input", async () => {
+      console.log("saving")
       if (!selectedRecord) return;
+      console.log("updating")
+      const table = grist.selectedTable;
       await table.update({
         id: selectedRecord.id,
         fields: {
@@ -24,9 +27,7 @@ export const reset = record => {
 };
 
 export const onRecord = async record => {
-  console.log("onRecord !", editor);
   if (editor && editor.value !== record[rawColumn]) {
-    console.log("onRecord changed !", record[rawColumn]);
     selectedRecord = record;
     editor.value = record[rawColumn] || "";
   }
