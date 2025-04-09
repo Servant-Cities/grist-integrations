@@ -1,7 +1,5 @@
 let baseUrl;
 let token;
-let selectedRecord;
-let container;
 let spinnerContainer;
 let imgCounter;
 let imgContainer;
@@ -36,7 +34,6 @@ async function renderImgs(record) {
 
       const id = attachments[0];
       try {
-        const attachment = await fetch(`${baseUrl}/attachments/${id}`);
         const src = `${baseUrl}/attachments/${id}/download?auth=${token}`;
 
         const img = new Image();
