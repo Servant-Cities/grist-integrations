@@ -1,5 +1,7 @@
 let baseUrl;
 let token;
+let selectedRecord;
+let container;
 let spinnerContainer;
 let imgCounter;
 let imgContainer;
