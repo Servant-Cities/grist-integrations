@@ -6,7 +6,7 @@ let selectedRecord;
 
 const params = new URLSearchParams(document.location.search);
 const drawIoUrl = params.get("draw-io-url") || "https://embed.diagrams.net";
-const autosave = params.get("autosave") || "0";
+const autosave = params.get("autosave") || "1";
 const rawColumn = params.get("rawColumn") || "Raw";
 // Wating for an update on this issue: https://github.com/gristlabs/grist-core/issues/1307
 //const attachmentColumn = params.get("attachmentColumn") || "Attachment";
