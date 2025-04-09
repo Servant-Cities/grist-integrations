@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<body style="margin: 0; height: 100vh; display: flex;">
+    <iframe id="call-iframe" src="" allow="camera; microphone" style="width: 100%; height: 100%; border: none;"></iframe>
+    <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+    <script>
+        grist.ready({
+            columns: [
+                {
+                    name: "iframeSrc",
+                    title: "Call Link",
+                    optional: false,
+                    type: "Text",
+                    description: "Column containing the call links"
+                }
+            ],
+            requiredAccess: 'read table'
+        });
+
+        grist.onRecord(function(record, mappings) {
+            const mapped = grist.mapColumnNames(record);
+            if (mapped) {
+                document.getElementById('call-iframe').src = mapped.iframeSrc;
+                console.log(`Using ${mappings.iframeSrc} column`);
+            } else {
+                console.error("Please map all columns");
+            }
+        });
+    </script>
+</body>
+</html>
