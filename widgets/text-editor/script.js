@@ -11,9 +11,7 @@ export const reset = record => {
 
   if (editor) {
     editor.addEventListener("input", async () => {
-      console.log("saving")
       if (!selectedRecord) return;
-      console.log("updating")
       const table = grist.selectedTable;
       await table.update({
         id: selectedRecord.id,
